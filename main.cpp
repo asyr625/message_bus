@@ -122,22 +122,53 @@ struct STA
     int m_a;
     int operator ()() { return m_a; }
     int operator ()(int n) { return m_a + n; }
-    int triple0() { return m_a * 3; }
-    int triple(int a) { return m_a * 3 + a; }
-    int triple1() const { return m_a * 3; }
-    const int triple2(int a) const { return m_a * 3 + a; }
+    int triple0()
+    {
+        cout << "triple0" << endl;
+        return m_a * 3;
+    }
+    int triple(int a)
+    {
+        cout << "triple" << endl;
+        return m_a * 3 + a;
+    }
+    int triple1() const
+    {
+        cout << "triple1 const" << endl;
+        return m_a * 3;
+    }
+    const int triple2(int a) const
+    {
+        cout << "const triple2 const" << endl;
+        return m_a * 3 + a;
+    }
+
+    void triple3() { cout << " " << endl;}
 };
 
 int add_one(int n)
 {
+    cout << "add_one: n " << n << endl;
     return n + 1;
+}
+
+int add_one_two(int n, int m )
+{
+    cout << "add_one: n " << n << " m " << m << endl;
+    return n + m;
 }
 
 class Bloop
 {
 public:
+    int operator ()()
+    {
+        cout << "Bloop: operator() "<< endl;
+        return 0;
+    }
     int operator ()(int a)
     {
+        cout << "Bloop: operator "<< endl;
         return a;
     }
 };
@@ -146,20 +177,48 @@ void test_wrap()
 {
 
     Common_Command<int> cmd;
+
     cmd.warp(add_one, 0);
-#if 0
-    cmd.warp([](int n){ return n + 1;});
+    cmd.execute();
+
+    cmd.warp(add_one_two, 0, 1);
+    cout << cmd.execute();
 
     Bloop bloop;
     cmd.warp(bloop);
+    cmd.execute();
+    cout << endl;
     cmd.warp(bloop, 4);
+    cmd.execute();
+
+    STA t = {10};
+    int x = 3;
+
+    cmd.warp(&STA::triple0, &t);
+    cmd.execute();
+
+    //cmd.warp(&STA::triple1, &t);
+    cmd.execute();
+
+    cmd.warp(&STA::triple, &t, x);
+    cmd.execute();
+
+    cmd.warp(&STA::triple, &t, 3);
+    cmd.execute();
+#if 0
+    cmd.warp(&STA::triple2, &t, 3);
+    cmd.execute();
+
+
+    cmd.warp([](int n){ return n + 1;});
 #endif
 }
 
 int main()
 {
     //test_event();
-    test_visitor();
+    //test_visitor();
+    test_wrap();
     cout << "Hello World!" << endl;
     return 0;
 }
