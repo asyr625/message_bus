@@ -28,10 +28,13 @@ public:
         auto construct_name = typeid(Constructor<Args...>).name();
         for(size_t i = 0; i < num; i++)
         {
+            cout << "size " << m_object_map.size() << endl;
             m_object_map.emplace(construct_name, shared_ptr<T>(new T(std::forward<Args>(args)...), [this, construct_name](T*p)
             {
+                cout << "delete ...." << endl;
                 m_object_map.emplace(std::move(construct_name), std::shared_ptr<T>(p));
             }));
+            cout << construct_name << endl;
         }
     }
 
@@ -40,14 +43,22 @@ public:
     {
         string construct_name = typeid(Constructor<Args...>).name();
 
+        cout << "get() size111 " << m_object_map.size() << endl;
         auto range = m_object_map.equal_range(construct_name);
         for(auto it = range.first; it != range.second; ++it )
         {
             auto ptr = it->second;
             m_object_map.erase(it);
+            cout << "get() size22 " << m_object_map.size() << endl;
             return ptr;
         }
+        cout << "nullptr "<< endl;
         return nullptr;
+    }
+
+    int get_size()
+    {
+        return m_object_map.size();
     }
 
 private:

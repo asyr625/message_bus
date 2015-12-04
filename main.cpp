@@ -5,6 +5,9 @@ using namespace std;
 #include "event.h"
 #include "visitor.h"
 #include "common_command.h"
+//#include "CommCommand.h"
+
+#include "Object_Pool.h"
 
 struct stA;
 struct stB;
@@ -115,8 +118,34 @@ void test_event()
     cout << "t a" << t.a << "," << t.b << endl;
 }
 
-
 //
+int add_one(int n)
+{
+    cout << "add_one: n " << n << endl;
+    return n + 1;
+}
+
+int add_one_two(int n, int m )
+{
+    cout << "add_one: n " << n << " m " << m << endl;
+    return n + m;
+}
+
+class Bloop
+{
+public:
+    int operator ()()
+    {
+        cout << "Bloop: operator() "<< endl;
+        return 0;
+    }
+    int operator ()(int a)
+    {
+        cout << "Bloop: operator "<< endl;
+        return a;
+    }
+};
+
 struct STA
 {
     int m_a;
@@ -146,79 +175,104 @@ struct STA
     void triple3() { cout << " " << endl;}
 };
 
-int add_one(int n)
-{
-    cout << "add_one: n " << n << endl;
-    return n + 1;
-}
-
-int add_one_two(int n, int m )
-{
-    cout << "add_one: n " << n << " m " << m << endl;
-    return n + m;
-}
-
-class Bloop
-{
-public:
-    int operator ()()
-    {
-        cout << "Bloop: operator() "<< endl;
-        return 0;
-    }
-    int operator ()(int a)
-    {
-        cout << "Bloop: operator "<< endl;
-        return a;
-    }
-};
-
 void test_wrap()
 {
-
+    //CommCommand<int> cmd;
     Common_Command<int> cmd;
 
-    cmd.warp(add_one, 0);
+    cmd.wrap(add_one, 0);
     cmd.execute();
 
-    cmd.warp(add_one_two, 0, 1);
+    cmd.wrap(add_one_two, 0, 1);
     cout << cmd.execute();
 
     Bloop bloop;
-    cmd.warp(bloop);
+    cmd.wrap(bloop);
     cmd.execute();
     cout << endl;
-    cmd.warp(bloop, 4);
+    cmd.wrap(bloop, 4);
     cmd.execute();
 
     STA t = {10};
     int x = 3;
 
-    cmd.warp(&STA::triple0, &t);
+    cmd.wrap(&STA::triple0, &t);
     cmd.execute();
 
     //cmd.warp(&STA::triple1, &t);
     cmd.execute();
 
-    cmd.warp(&STA::triple, &t, x);
+    cmd.wrap(&STA::triple, &t, x);
     cmd.execute();
 
-    cmd.warp(&STA::triple, &t, 3);
-    cmd.execute();
-#if 0
-    cmd.warp(&STA::triple2, &t, 3);
+    cmd.wrap(&STA::triple, &t, 3);
     cmd.execute();
 
+    cmd.wrap(&STA::triple2, &t, 3);
+    cmd.execute();
 
-    cmd.warp([](int n){ return n + 1;});
+    cmd.wrap([](int n){ return n + 1;}, 1);
+}
+
+
+struct Big_Object
+{
+    Big_Object() {}
+    Big_Object(int a) {}
+    Big_Object(const int & a, const int & b) {}
+    ~Big_Object() { cout << "~Big_Object." << endl;}
+
+    void print(const string& str)
+    {
+        cout << str << endl;
+    }
+};
+
+void print(shared_ptr<Big_Object> p, const string& str)
+{
+    if( p != nullptr )
+        p->print(str);
+}
+
+
+void test_big_object()
+{
+    Object_Pool<Big_Object> pool;
+    pool.init(2);
+    {
+        auto p = pool.get();
+        print(p, "p");
+
+        auto p2 = pool.get();
+        print(p2, "p2");
+    }
+    //cout << "1size " << pool.get_size() << endl;
+    auto p = pool.get();
+    auto p2 = pool.get();
+    print(p, "p");
+    print(p2, "p2");
+    //cout << "2size " << pool.get_size() << endl;
+
+    pool.init(2,1);
+    auto p4 = pool.get<int>();
+    print(p4, "p4");
+    //cout << "3size " << pool.get_size() << endl;
+    pool.init(2,1, 2);
+    //cout << "4size " << pool.get_size() << endl;
+    auto p5 = pool.get<int, int>();
+    print(p5, "p5");
+    #if 0
 #endif
+    cout << "size " << pool.get_size() << endl;
+    cout << "11111" << endl;
 }
 
 int main()
 {
     //test_event();
     //test_visitor();
-    test_wrap();
+    //test_wrap();
+    test_big_object();
     cout << "Hello World!" << endl;
     return 0;
 }
